@@ -178,7 +178,8 @@ If you have a Saj Sec Module Add below sensor an resources:
       - selfConsumedEnergy2
       - plantTreeNum
       - reduceCo2
-      - totalGridPower
+      - totalImportGridPower
+      - totalExportGridPower
       - totalLoadPower
       - totalPvgenPower
       - totalPvEnergy
