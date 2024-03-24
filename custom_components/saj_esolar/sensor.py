@@ -100,7 +100,8 @@ SENSOR_LIST = {
     "selfConsumedEnergy2",
     "plantTreeNum",
     "reduceCo2",
-    "totalGridPower",
+    "totalImportGridPower",
+    "totalExportGridPower",    
     "totalLoadPower",
     "totalPvgenPower",
     "totalPvEnergy",
@@ -351,11 +352,17 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         icon="mdi:molecule-co2",
     ),
     SensorEntityDescription(
-        key="totalGridPower",
-        name="totalGridPower",
+        key="totalImportGridPower",
+        name="totalImportGridPower",
         icon="mdi:solar-panel",
         native_unit_of_measurement=POWER_WATT,
     ),
+    SensorEntityDescription(
+        key="totalExportGridPower",
+        name="totalExportGridPower",
+        icon="mdi:solar-panel",
+        native_unit_of_measurement=POWER_WATT,
+    ),    
     SensorEntityDescription(
         key="totalLoadPower",
         name="totalLoadPower",
@@ -1171,10 +1178,14 @@ class SAJeSolarMeterSensor(SensorEntity):
 
 
                 # dataCountList
-                if self._type == 'totalGridPower':
+                if self._type == 'totalImportGridPower':
                     if 'dataCountList' in energy:
                         if energy["getPlantMeterChartData"]['dataCountList'][4][-1] is not None:
                             self._state = float(energy["getPlantMeterChartData"]['dataCountList'][4][-1])
+                if self._type == 'totalExportGridPower':
+                    if 'dataCountList' in energy:
+                        if energy["getPlantMeterChartData"]['dataCountList'][4][-1] is not None:
+                            self._state = float(energy["getPlantMeterChartData"]['dataCountList'][3][-1])
                 if self._type == 'totalLoadPower':
                     if 'dataCountList' in energy:
                         if energy["getPlantMeterChartData"]['dataCountList'][4][-1] is not None:
