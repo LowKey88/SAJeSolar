@@ -28,9 +28,9 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_SENSORS,
-    ENERGY_KILO_WATT_HOUR,
-    POWER_WATT,
     PERCENTAGE,
+    UnitOfEnergy,
+    UnitOfPower,
 )
 
 CONF_PLANT_ID: Final = "plant_id"
@@ -54,6 +54,15 @@ def add_years(d, years):
 
 BASE_URL = 'https://fop.saj-electric.com/saj/login'
 _LOGGER = logging.getLogger(__name__)
+
+DEVICE_TYPES = {
+    "Inverter": 0,
+    "Meter": 1,  # TODO: Pending to confirm
+    "Battery": 2,
+    0: "Inverter",
+    1: "Meter",  # TODO: Pending to confirm
+    2: "Battery",
+}
 
 MIN_TIME_BETWEEN_UPDATES = datetime.timedelta(minutes=5)
 
@@ -100,10 +109,16 @@ SENSOR_LIST = {
     "selfConsumedEnergy2",
     "plantTreeNum",
     "reduceCo2",
+    #deprecated entities (values dont actually match what they meant to )
     "totalImportGridPower",
-    "totalExportGridPower",    
+    "totalExportGridPower",
     "totalLoadPower",
     "totalPvgenPower",
+    #new saj entities
+    "gridLoadPower",
+    "solarLoadPower",
+    "homeLoadPower",
+    "exportPower",
     "totalPvEnergy",
     "totalLoadEnergy",
     "totalBuyEnergy",
@@ -132,8 +147,8 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="nowPower",
         name="nowPower",
         icon="mdi:solar-power",
-        native_unit_of_measurement=POWER_WATT,
-        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="runningState",
@@ -149,28 +164,28 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="todayElectricity",
         name="todayElectricity",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="monthElectricity",
         name="monthElectricity",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="yearElectricity",
         name="yearElectricity",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="totalElectricity",
         name="totalElectricity",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -183,7 +198,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="totalBuyElec",
         name="totalBuyElec",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -191,14 +206,14 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="totalConsumpElec",
         name="totalConsumpElec",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="totalSellElec",
         name="totalSellElec",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -266,28 +281,28 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="peakPower",
         name="peakPower",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=POWER_WATT,
-        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="systemPower",
         name="systemPower",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=POWER_WATT,
-        device_class=SensorDeviceClass.POWER,
-    ),    
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.ENERGY,
+    ),
     SensorEntityDescription(
         key="pvElec",
         name="pvElec",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="useElec",
         name="useElec",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -295,7 +310,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="buyElec",
         name="buyElec",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -303,7 +318,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="sellElec",
         name="sellElec",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -331,14 +346,14 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="selfConsumedEnergy1",
         name="selfConsumedEnergy1",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="selfConsumedEnergy2",
         name="selfConsumedEnergy2",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
@@ -355,32 +370,57 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="totalImportGridPower",
         name="totalImportGridPower",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="totalExportGridPower",
         name="totalExportGridPower",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=POWER_WATT,
-    ),    
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
     SensorEntityDescription(
         key="totalLoadPower",
         name="totalLoadPower",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=POWER_WATT,
-        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.ENERGY,
     ),
     SensorEntityDescription(
         key="totalPvgenPower",
         name="totalPvgenPower",
         icon="mdi:solar-panel",
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
+    SensorEntityDescription(
+        key="gridLoadPower",
+        name="gridLoadPower",
+        icon="mdi:transmission-tower-import",
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
+    SensorEntityDescription(
+        key="solarLoadPower",
+        name="solarLoadPower",
+        icon="mdi:solar-power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.ENERGY,
+    ),
+    SensorEntityDescription(
+        key="homeLoadPower",
+        name="homeLoadPower",
+        icon="mdi:home-lightning-bolt-outline",
+        native_unit_of_measurement=UnitOfPower.WATT,
+    ),
+    SensorEntityDescription(
+        key="exportPower",
+        name="exportPower",
+        icon="mdi:transmission-tower-export",
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="totalPvEnergy",
         name="totalPvEnergy",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -388,7 +428,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="totalLoadEnergy",
         name="totalLoadEnergy",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -396,7 +436,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="totalBuyEnergy",
         name="totalBuyEnergy",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -404,7 +444,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="totalSellEnergy",
         name="totalSellEnergy",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -441,13 +481,13 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="batteryPower",
         name="batteryPower",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="gridPower",
         name="gridPower",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="gridDirection",
@@ -463,7 +503,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="outPower",
         name="outPower",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=POWER_WATT,
+        native_unit_of_measurement=UnitOfPower.WATT,
     ),
     SensorEntityDescription(
         key="outPutDirection",
@@ -484,7 +524,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="chargeElec",
         name="chargeElec",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -492,7 +532,7 @@ SENSOR_TYPES: Final[tuple[SensorEntityDescription, ...]] = (
         key="dischargeElec",
         name="dischargeElec",
         icon="mdi:solar-panel-large",
-        native_unit_of_measurement=ENERGY_KILO_WATT_HOUR,
+        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -511,7 +551,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional("provider_path", default="saj"):cv.string,
         vol.Optional("provider_protocol", default="https"):cv.string,
         vol.Optional("provider_ssl", default=True):cv.boolean,
-  
+
 
     }
 )
@@ -539,7 +579,7 @@ class EsolarProvider(object):
          self.host=host
          self.path=path
          self.protocol=protocol
-    
+
     def getBaseDomain(self):
         return f"{self.protocol}://{self.host}"
 
@@ -548,7 +588,7 @@ class EsolarProvider(object):
 
     def getLoginUrl(self):
         return f"{self.getBaseUrl()}/login"
-    
+
 
 
 class SAJeSolarMeterData(object):
@@ -641,7 +681,6 @@ class SAJeSolarMeterData(object):
             plantInfo = await response2.json()
             plantuid = plantInfo['plantList'][self.plant_id]['plantuid']
 
-
             # Get API Plant Solar Details
             url3 =  f"{self._provider.getBaseUrl()}/monitor/site/getPlantDetailInfo"
             payload3= f"plantuid={plantuid}&clientDate={clientDate}"
@@ -656,11 +695,33 @@ class SAJeSolarMeterData(object):
             #_LOGGER.error(f"PlantDetails: {plantDetails}")
             plantDetails.update(plantInfo)
 
+            devicesInfoUrl = f"{self._provider.getBaseUrl()}/cloudMonitor/device/findDevicePageList"
+            devicesInfoPayload = f"officeId=&pageNo=&pageSize=&orderName=1&orderType=2&plantuid={plantuid}&deviceStatus=&localDate=&localMonth="
+            deviceInfoReponse = await self._session.post(
+                devicesInfoUrl, headers=headers, data=devicesInfoPayload
+            )
+            if deviceInfoReponse.status != 200:
+                _LOGGER.error(
+                    "{deviceInfoReponse.url} returned {deviceInfoReponse.status}"
+                )
+                return
+
+            devicesInfoData = await deviceInfoReponse.json()
+            plantDetails.update(devicesInfoData)
+            if self.sensors == "h1":
+                deviceSnArr = next(
+                    (
+                        item['devicesn']
+                        for item in plantDetails["list"]
+                        if item["type"] == DEVICE_TYPES["Battery"]
+                    ),
+                    plantDetails["plantDetail"]["snList"][0],
+                )
+            else:
+                deviceSnArr = plantDetails["plantDetail"]["snList"][0]
+
 
             # getPlantDetailChart2
-            plantuid = plantDetails['plantList'][self.plant_id]['plantuid']
-
-            deviceSnArr = plantDetails['plantDetail']['snList'][0]
             previousChartDay = today - datetime.timedelta(days=1)
             nextChartDay = today + datetime.timedelta(days = 1)
             chartDay = today.strftime('%Y-%m-%d')
@@ -671,7 +732,8 @@ class SAJeSolarMeterData(object):
             nextChartYear = add_years(today, 1).strftime('%Y')
             chartYear = today.strftime('%Y')
             epochmilliseconds = round(int((datetime.datetime.utcnow() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000))
-            url4 = f"{self._provider.getBaseUrl()}/monitor/site/getPlantDetailChart2?plantuid={plantuid}&chartDateType=1&energyType=0&clientDate={clientDate}&deviceSnArr={deviceSnArr}&chartCountType=2&previousChartDay={previousChartDay}&nextChartDay={nextChartDay}&chartDay={chartDay}&previousChartMonth={previousChartMonth}&nextChartMonth={nextChartMonth}&chartMonth={chartMonth}&previousChartYear={previousChartYear}&nextChartYear={nextChartYear}&chartYear={chartYear}&elecDevicesn=&_={epochmilliseconds}"
+            elecDevicesn = deviceSnArr if self.sensors == "h1" else ""
+            url4 = f"{self._provider.getBaseUrl()}/monitor/site/getPlantDetailChart2?plantuid={plantuid}&chartDateType=1&energyType=0&clientDate={clientDate}&deviceSnArr={deviceSnArr}&chartCountType=2&previousChartDay={previousChartDay}&nextChartDay={nextChartDay}&chartDay={chartDay}&previousChartMonth={previousChartMonth}&nextChartMonth={nextChartMonth}&chartMonth={chartMonth}&previousChartYear={previousChartYear}&nextChartYear={nextChartYear}&chartYear={chartYear}&elecDevicesn={elecDevicesn}&_={epochmilliseconds}"
             # _LOGGER.error(f"PlantCharts URL: {url4}")
             response4 = await self._session.post(url4, headers=headers)
 
@@ -733,7 +795,6 @@ class SAJeSolarMeterData(object):
 
                 # -Debug- Sec module serial number
                 _LOGGER.debug(moduleSn)
-
 
                 # findDevicePageList
                 url_findDevicePageList = f"{self._provider.getBaseUrl()}/cloudMonitor/device/findDevicePageList"
@@ -1177,10 +1238,10 @@ class SAJeSolarMeterSensor(SensorEntity):
                             self._state = (energy["getPlantMeterChartData"]['viewBean']["plantTreeNum"])
 
 
-                # dataCountList
+                # dataCountList, deprecated since use the wrong columns
                 if self._type == 'totalImportGridPower':
                     if 'dataCountList' in energy:
-                        if energy["getPlantMeterChartData"]['dataCountList'][4][-1] is not None:
+                        if energy["getPlantMeterChartData"]['dataCountList'][3][-1] is not None:
                             self._state = float(energy["getPlantMeterChartData"]['dataCountList'][4][-1])
                 if self._type == 'totalExportGridPower':
                     if 'dataCountList' in energy:
@@ -1195,6 +1256,23 @@ class SAJeSolarMeterSensor(SensorEntity):
                         if energy["getPlantMeterChartData"]['dataCountList'][4][-1] is not None:
                             self._state = float(energy["getPlantMeterChartData"]['dataCountList'][0][-1])
 
+                #dataCountList, new entities
+                if self._type == 'homeLoadPower':
+                    if 'dataCountList' in energy:
+                        if energy["getPlantMeterChartData"]['dataCountList'][1][-1] is not None:
+                            self._state = float(energy["getPlantMeterChartData"]['dataCountList'][1][-1])
+                if self._type == 'solarLoadPower':
+                    if 'dataCountList' in energy:
+                        if energy["getPlantMeterChartData"]['dataCountList'][2][-1] is not None:
+                            self._state = float(energy["getPlantMeterChartData"]['dataCountList'][2][-1])
+                if self._type == 'exportPower':
+                    if 'dataCountList' in energy:
+                        if energy["getPlantMeterChartData"]['dataCountList'][3][-1] is not None:
+                            self._state = float(energy["getPlantMeterChartData"]['dataCountList'][3][-1])
+                if self._type == 'gridLoadPower':
+                    if 'dataCountList' in energy:
+                        if energy["getPlantMeterChartData"]['dataCountList'][4][-1] is not None:
+                            self._state = float(energy["getPlantMeterChartData"]['dataCountList'][4][-1])
 
                 # getPlantMeterDetailInfo
                 if self._type == 'totalPvEnergy':
