@@ -6,24 +6,27 @@ NOTE: This component is built upon a none public API and can change/break at any
 Please go to the [Supported devides](#devices) part to see if your device is supported<br>
 <br>
 
-# **🤘👩‍💻 Calling Python & REST API Enthusiasts for HA SAJ Solar!👨‍💻🤘**
+# **👩‍💻 Python & REST API Enthusiasts for HA SAJ Solar!👨‍💻**
 
 ### Do you use the SAJ solar monitoring project and have knowledge of Python scripting and REST APIs? 
 ## If so, we need YOU!
 
-I created this repository for a family member but made it publicly available as I saw a wider need. Newer SAJ dongles lack local connections, making this project valuable for others. However, demand has grown, and a major change is coming with SAJ's new website i can't deal with those changes on my one.
+I created this repository for a family member but made it publicly available as I saw a wider need. Newer SAJ dongles lack local connections, making this project valuable for others. However, demand has grown, and a major change is coming with SAJ's new website i can't deal with those changes on my own.
 
 ## **Challenges & Opportunities**
 + Potential API breakage: The old API will likely be discontinued with the new platform. Some retailers have already seen changes.
 + Configuration complexity: Manual configuration through configuration.yaml isn't ideal.
-+ This is where your expertise comes in!
+
+This is where your expertise comes in!
 
 We're looking for a co-author to help maintain and improve the project, particularly with the upcoming website changes. If you have Python scripting and REST API experience, we'd love to hear from you!<br>
 
 ## **Join the Effort!**<br>
-+ Check out the project: https://github.com/faanskit/ha-esolar (by @faanskit, who made fantastic contributions!)
++ Check out this project for inspiration: https://github.com/faanskit/ha-esolar (by @faanskit, who made fantastic contributions!)
++ Create pull request to help the project
 + Reach out: Email me at github@djansen.nl if you're interested in collaborating.
-+ Together, let's make this project even better!
+
+Together, let's make this project even better!
 
 <br><br>
 
@@ -178,13 +181,19 @@ If you have a Saj Sec Module Add below sensor an resources:
       - selfConsumedEnergy2
       - plantTreeNum
       - reduceCo2
-      - totalGridPower
-      - totalLoadPower
-      - totalPvgenPower
       - totalPvEnergy
       - totalLoadEnergy # Energy -> Grid consumption
       - totalBuyEnergy
       - totalSellEnergy # Energy -> Return to grid
+      #these entities are deprecated since they return incorrect values
+      - totalGridPower  # Power being exported to the grid
+      - totalLoadPower  # Solar power being currently self-consumed 
+      - totalPvgenPower # Power imported from the grid
+      #these new entities replace them
+      - gridLoadPower   # Power imported from the grid
+      - solarLoadPower  # Solar power being currently self-consumed 
+      - homeLoadPower   # Total power being consumed by the plant (the home)
+      - exportPower     # Power being exported to the grid
 ```
 <br><br>
 If you are a user of Solarprofit / Greenheiss
